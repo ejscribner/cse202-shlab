@@ -167,6 +167,23 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+	char* argv[MAXARGS];
+	pid_t pid;
+
+	int bg = parseline(cmdline, argv);
+	fprintf(stdout, "bg is: %i \n", bg);
+	if(argv[0] == NULL) {
+		return;
+	}
+	if(!builtin_cmd(argv)) { //calls to see if built in
+		//not built in
+		if((pid = fork()) == 0) { //child -- could use Fork with err checking method
+			fprintf(stdout, "This is a child\n");
+		}
+	}
+
+
+
     return;
 }
 
@@ -233,6 +250,26 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+	char* cmd = argv[0];
+	char* quit = "quit";
+	char* jobStr = "jobs";
+	char* bg = "bg";
+	char* fg = "fg";
+
+	if(strcmp(cmd,bg) == 0 || strcmp(cmd,fg) == 0) {
+		//do something to bg/fg
+		do_bgfg(argv);
+		return 1; //indicating it is a built in command
+	} else if (strcmp(cmd, quit) == 0) {
+		//quit shell
+		sigchld_handler(1);
+		exit(EXIT_SUCCESS);
+	} else if (strcmp(cmd, jobStr) == 0) {
+		listjobs(jobs);
+		return 1; //it was a build in cmd
+	}
+
+
     return 0;     /* not a builtin command */
 }
 
@@ -249,6 +286,7 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+
     return;
 }
 
@@ -263,7 +301,7 @@ void waitfg(pid_t pid)
  *     available zombie children, but doesn't wait for any other
  *     currently running children to terminate.  
  */
-void sigchld_handler(int sig) 
+void sigchld_handler(int sig)
 {
     return;
 }
@@ -275,6 +313,10 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+	pid_t fpid = fgpid(jobs);
+	if(fpid) {
+		kill(-fpid, SIGINT);
+	}
     return;
 }
 
